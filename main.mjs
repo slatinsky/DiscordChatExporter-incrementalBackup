@@ -91,20 +91,20 @@ class Discord {
     }
 
     async getChannels(guildId) {
-        const fileName = `${guildId}/channels.json`
+        const fileName = `guilds/${guildId}/channels.json`
         const channels = await this.discordFetch(`guilds/${guildId}/channels`, fileName);
         return channels;
     }
 
     async getUserProfile() {
-        const fileName = `${this.hashedToken}/me.json`
+        const fileName = `users/${this.hashedToken}/me.json`
         const guild = await this.discordFetch(`users/@me`, fileName);
         return guild;
     }
 
 
     async getGuildUserProfile(userId, guildId) {
-        const fileName = `${this.hashedToken}/${guildId}/me.json`;
+        const fileName = `users/${this.hashedToken}/guilds/${guildId}/me.json`;
         const profile = await this.discordFetch(`users/${userId}/profile?with_mutual_guilds=false&guild_id=${guildId}`, fileName);
         return profile;
     }
@@ -181,7 +181,7 @@ class Discord {
         let offset=0;
         let allThreads = [];
         while(true) {
-            const fileName = `${guildId}/threads_${channelId}_${offset}.json`;
+            const fileName = `guilds/${guildId}/threads/${channelId}_${offset}.json`;
             let threads = await this.discordFetch(`channels/${channelId}/threads/search?archived=true&sort_by=last_message_time&sort_order=desc&limit=25&offset=${offset}`, fileName);
             allThreads = allThreads.concat(threads.threads);
             if (!threads.has_more) {
@@ -271,18 +271,21 @@ if (!args.token) {
 
 
 function execCommand(command) {
-    // console.log(command);
     // command = 'ping 1.1.1.1'   // DEBUG
 
     if (!args.dryrun) {
-        console.log('NOT DRY RUN');
-        // let args = parseArgsStringToArgv(command);
-        // let cmd = args.shift();
-        // var child = spawn.sync(cmd, args, { stdio: 'inherit' });
-        // if(child.error) {
-        //     console.log("ERROR: ",child.error);
-        //     // process.exit(1);
-        // }
+        console.log(command);
+        // console.log('NOT DRY RUN');
+        let args = parseArgsStringToArgv(command);
+        let cmd = args.shift();
+        var child = spawn.sync(cmd, args, { stdio: 'inherit' });
+        if(child.error) {
+            console.log("ERROR: ",child.error);
+            // process.exit(1);
+        }
+    }
+    else {
+        console.log(command);
     }
 
 }
@@ -324,7 +327,7 @@ async function downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds
         // download threads/forums
         const threads = await discord.getThreads(args.guild, channel.id);
         for (const thread of threads) {
-            ignoreChannelIds = await downloadChannelOrThread(thread, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord);
+            ignoreChannelIds = await downloadChannelOrThread(thread, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER + '_threads/', discord);
         }
     }
     return ignoreChannelIds
@@ -336,7 +339,6 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     const dateString = new Date().toISOString().slice(0, 10);  //yyyy_mm_dd
     // const dateString = new Date().toISOString().slice(0, 19).replace(/:/g, '-');  // yyyy_mm_dd_hh_mm_ss
     const CACHE_FOLDER = `cache/${dateString}/`;
-    const OUTPUT_FOLDER = args.output.replace(/\\/g, "/") + "/automated/" + hashedToken + "/" + dateString + "/";
 
 
     // if OUTPUT_FOLDER does not exist, create it
@@ -350,6 +352,10 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
 
     const allowedChannels = await discord.getAllowedChannels(args.guild);
     const userName = (await discord.getUserProfile()).username;
+    const safeUserName = userName.replace(/[^a-zA-Z0-9]/gi, '')
+
+    const OUTPUT_FOLDER = args.output.replace(/\\/g, "/") + "/automated/" + args.guild + "/" + safeUserName + "/" + dateString + "/";
+
     console.log(`Logged in as ${clc.green(userName)}`);
     // const commands = []
     for (const channel of allowedChannels) {
