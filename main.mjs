@@ -8,8 +8,10 @@ import {globby} from 'globby';
 import moment from 'moment';
 
 import { parseArgsStringToArgv } from 'string-argv';
-import { log } from 'console';
 import { spawn } from 'cross-spawn';
+
+import clc from 'cli-color';
+
 
 
 
@@ -17,10 +19,11 @@ import { spawn } from 'cross-spawn';
 
 
 class Discord {
-    constructor(token, CACHE_FOLDER) {
+    constructor(token, CACHE_FOLDER, hashedToken) {
         this.agent = new https.Agent({ keepAlive: true });
         this.token = token;
         this.CACHE_FOLDER = CACHE_FOLDER;
+        this.hashedToken = hashedToken;
     }
 
     async saveToFile(fileName, json) {
@@ -73,6 +76,7 @@ class Discord {
         }
         if (json.message) {
             console.error("Error:", json.message, json.code, endpoint);
+            // panic mode - kill the app on api error
             process.exit(1);
         }
 
@@ -93,14 +97,14 @@ class Discord {
     }
 
     async getUserProfile() {
-        const fileName = `me.json`
+        const fileName = `${this.hashedToken}/me.json`
         const guild = await this.discordFetch(`users/@me`, fileName);
         return guild;
     }
 
 
     async getGuildUserProfile(userId, guildId) {
-        const fileName = `${guildId}/me.json`;
+        const fileName = `${this.hashedToken}/${guildId}/me.json`;
         const profile = await this.discordFetch(`users/${userId}/profile?with_mutual_guilds=false&guild_id=${guildId}`, fileName);
         return profile;
     }
@@ -172,6 +176,21 @@ class Discord {
         // console.log("No access", JSON.stringify(noAccess.map(c => c.name), null, 2));
         return hasAccess;
     }
+
+    async getThreads(guildId, channelId) {
+        let offset=0;
+        let allThreads = [];
+        while(true) {
+            const fileName = `${guildId}/threads_${channelId}_${offset}.json`;
+            let threads = await this.discordFetch(`channels/${channelId}/threads/search?archived=true&sort_by=last_message_time&sort_order=desc&limit=25&offset=${offset}`, fileName);
+            allThreads = allThreads.concat(threads.threads);
+            if (!threads.has_more) {
+                break;
+            }
+            offset += 25;
+        }
+        return allThreads;
+    }
 }
 
 
@@ -223,18 +242,20 @@ class DiscordExport {
 
 const args = minimist(process.argv.slice(2), {
     string: ['token', 'guild'],
+    boolean: ['help', 'dryrun'],
     alias: {
         t: 'token',
         g: 'guild'
     }
 });
-// console.log("args", args);
+console.log("args", args);
 // process.exit(1);
 
-if (args._.length === 0) {
+if (args._.length === 0 || args.help) {
     console.error('## Discord export helper ##')
     console.log('Available commands:');
     console.log('  channels --token <token1> [--token <token2> ...] --guild <guildId> --output "<export_folder_path>"');
+    console.log('  add --dryrun to only print the commands to be executed');
     process.exit(1);
 }
 
@@ -250,62 +271,89 @@ if (!args.token) {
 
 
 function execCommand(command) {
-    console.log(command);
+    // console.log(command);
     // command = 'ping 1.1.1.1'   // DEBUG
 
-    let args = parseArgsStringToArgv(command);
-    let cmd = args.shift();
-    // console.log("cmd", cmd, "args", args);
-    var child = spawn.sync(cmd, args, { stdio: 'inherit' });
-    console.log("Process finished.");
-    if(child.error) {
-        console.log("ERROR: ",child.error);
+    if (!args.dryrun) {
+        console.log('NOT DRY RUN');
+        // let args = parseArgsStringToArgv(command);
+        // let cmd = args.shift();
+        // var child = spawn.sync(cmd, args, { stdio: 'inherit' });
+        // if(child.error) {
+        //     console.log("ERROR: ",child.error);
+        //     // process.exit(1);
+        // }
     }
+
 }
 
-async function exportChannels(token, ignoreChannelIds) {
-    // hash token to get a unique folder for each user
-    const hash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 10)
-    const yyyy_mm_dd = new Date().toISOString().slice(0, 10);
-    const CACHE_FOLDER = `cache/${hash}/${yyyy_mm_dd}/`;
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex').slice(0, 10)
+}
 
-    const INPUT_FOLDER = args.output.replace(/\\/g, "/");
-    const OUTPUT_FOLDER = args.output.replace(/\\/g, "/") + "/automated/" + hash + "/" + yyyy_mm_dd + "/";
-    // if OUTPUT_FOLDER does not exist, create it
-    if (fs.existsSync(OUTPUT_FOLDER)) {
-        console.log("Today's backup was already done for this token, aborting");
+async function downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord) {
+    let channelTypeDebug = clc.blue("channel")
+    if (channel.type === 11) {
+        channelTypeDebug = clc.magenta("thread")
+    }
+    if (ignoreChannelIds.includes(channel.id)) {
+        console.log(`Ignoring ${channelTypeDebug} ${clc.yellow(channel.name)}, because it was already downloaded`);
         return ignoreChannelIds
     }
-    const discord = new Discord(token, CACHE_FOLDER);
-    const discordExport = new DiscordExport(INPUT_FOLDER);
+    if (channel.last_message_id === null) {
+        console.log(`No messages in ${channelTypeDebug} ${clc.yellow(channel.name)}`);
+        return ignoreChannelIds
+    }
+    else if (!lastMessageIds[channel.id]) {
+        console.log(`${clc.green('New')} ${channelTypeDebug} ${clc.yellow(channel.name)} with messages`, );
+        // TODO: FIX POSSIBLE COMMAND INJECTION
+        execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`);
+        ignoreChannelIds.push(channel.id);
+    }
+    else if (lastMessageIds[channel.id]['id'] === channel.last_message_id) {
+        console.log(`${channelTypeDebug} ${clc.yellow(channel.name)} is already up to date`);
+        return ignoreChannelIds
+    }
+    else {
+        console.log(`${clc.green('More messages')} found in ${channelTypeDebug} ${clc.yellow(channel.name)}`);  // sometimes is false positive if the last message was deleted
+        // TODO: FIX POSSIBLE COMMAND INJECTION
+        execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`);
+        ignoreChannelIds.push(channel.id);
+    }
+    if (channel.type === 0 || channel.type === 15) {  // 0=threads, 15=forums
+        // download threads/forums
+        const threads = await discord.getThreads(args.guild, channel.id);
+        for (const thread of threads) {
+            ignoreChannelIds = await downloadChannelOrThread(thread, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord);
+        }
+    }
+    return ignoreChannelIds
+}
+
+async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
+    // hash token to get a unique folder for each user
+    const hashedToken = hashToken(token)
+    const dateString = new Date().toISOString().slice(0, 10);  //yyyy_mm_dd
+    // const dateString = new Date().toISOString().slice(0, 19).replace(/:/g, '-');  // yyyy_mm_dd_hh_mm_ss
+    const CACHE_FOLDER = `cache/${dateString}/`;
+    const OUTPUT_FOLDER = args.output.replace(/\\/g, "/") + "/automated/" + hashedToken + "/" + dateString + "/";
 
 
-    const lastMessageIds = await discordExport.findLastMessageIds()  // TODO: do not call this multiple times for multiple tokens
+    // if OUTPUT_FOLDER does not exist, create it
+    // if (fs.existsSync(OUTPUT_FOLDER)) {
+    //     console.log("Today's backup was already done for this token, aborting");
+    //     return ignoreChannelIds
+    // }
+    const discord = new Discord(token, CACHE_FOLDER, hashedToken);
+
+
+
     const allowedChannels = await discord.getAllowedChannels(args.guild);
+    const userName = (await discord.getUserProfile()).username;
+    console.log(`Logged in as ${clc.green(userName)}`);
     // const commands = []
     for (const channel of allowedChannels) {
-        if (ignoreChannelIds.includes(channel.id)) {
-            console.log("Ignoring channel, because it was already downloaded", channel.name);
-            continue;
-        }
-        if (channel.last_message_id === null) {
-            console.log("No messages in channel", channel.name);
-        }
-        else if (!lastMessageIds[channel.id]) {
-            console.log("New unexported channel with messages", channel.name);
-            // TODO: FIX POSSIBLE COMMAND INJECTION
-            execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`);
-            ignoreChannelIds.push(channel.id);
-        }
-        else if (lastMessageIds[channel.id]['id'] === channel.last_message_id) {
-            console.log("No new messages", channel.name);
-        }
-        else {
-            console.log("New messages found", channel.name);  // sometimes is false positive if the last message was deleted
-            // TODO: FIX POSSIBLE COMMAND INJECTION
-            execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`);
-            ignoreChannelIds.push(channel.id);
-        }
+        ignoreChannelIds = await downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord)
     }
     return ignoreChannelIds;
 }
@@ -322,9 +370,15 @@ if (args._.includes('channels')) {
         if (!Array.isArray(args.token)) {
             args.token = [args.token];
         }
+
+        const INPUT_FOLDER = args.output.replace(/\\/g, "/");
+        const discordExport = new DiscordExport(INPUT_FOLDER);
+        const lastMessageIds = await discordExport.findLastMessageIds()
+
         let ignoreChannelIds = [];
         for (const token of args.token) {
-            ignoreChannelIds = await exportChannels(token, ignoreChannelIds);
+            console.log("\n\n\n\n\n");
+            ignoreChannelIds = await exportChannels(token, ignoreChannelIds, lastMessageIds);
         }
     }
 }
