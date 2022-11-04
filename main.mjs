@@ -256,6 +256,7 @@ if (args._.length === 0 || args.help) {
     console.log('Available commands:');
     console.log('  channels --token <token1> [--token <token2> ...] --guild <guildId> --output "<export_folder_path>"');
     console.log('  add --dryrun to only print the commands to be executed');
+    console.log('  add --checkall to check all channels for updated threads, not just the ones with new messages');
     process.exit(1);
 }
 
@@ -315,7 +316,9 @@ async function downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds
     }
     else if (lastMessageIds[channel.id]['id'] === channel.last_message_id) {
         console.log(`${channelTypeDebug} ${clc.yellow(channel.name)} is already up to date`);
-        return ignoreChannelIds
+        if (!args.checkall) {  // check all channels for updated threads, not just the ones with new messages?
+            return ignoreChannelIds
+        }
     }
     else {
         console.log(`${clc.green('More messages')} found in ${channelTypeDebug} ${clc.yellow(channel.name)}`);  // sometimes is false positive if the last message was deleted
