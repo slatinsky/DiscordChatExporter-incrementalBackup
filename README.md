@@ -75,6 +75,11 @@ Doesn't affect forum_posts and threads.
 
 Default: all channels the token has access to
 
+### --deletecache (optional)
+Cache files are used if you use the script multiple times in a day or to continue after crash without requesting discord api again. This flag deletes cache files made the same day. Useful if you want to force the script to request all data from discord api again.
+
+Default: false
+
 ### Future plans
 - Add support for bot tokens
 - Add support for incremental backups direct messages

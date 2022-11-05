@@ -1,6 +1,7 @@
 import minimist from 'minimist';
 import crypto from 'crypto';
 import clc from 'cli-color';
+import fs from 'fs';
 
 
 import { DiscordApi } from './DiscordApi.mjs';
@@ -12,7 +13,7 @@ import { DiscordExportWritter } from './DiscordExportWritter.mjs';
 
 const args = minimist(process.argv.slice(2), {
     string: ['token', 'guild', 'output', 'whitelist'],
-    boolean: ['help', 'dryrun'],
+    boolean: ['help', 'dryrun', 'deletecache'],
     alias: {
         t: 'token',
         g: 'guild'
@@ -20,6 +21,7 @@ const args = minimist(process.argv.slice(2), {
     default: {
         help: false,
         dryrun: false,
+        deletecache: false,
         token: '',
         guild: '',
         output: '',
@@ -36,6 +38,7 @@ if (args.help) {
     console.log('  add --dryrun to only print the commands to be executed');
     console.log('  add --checkall to check all channels for updated threads, not just the ones with new messages');
     console.log('  add --whitelist <channelid1,channelid2,...> to download only the specified channel ids');
+    console.log('  add --deletecache to delete previous cache');
     process.exit(1);
 }
 
@@ -53,6 +56,15 @@ if (!Array.isArray(args.token)) {
 args.output = args.output.replace(/\\/g, "/")
 args.whitelist = args.whitelist.split(",").map(x => x.trim()).filter(x => x !== "")
 
+const dateString = new Date().toISOString().slice(0, 10);  //yyyy-mm-dd
+if (args.deletecache) {
+    let todaysCacheFolder = `cache/${dateString}/`;
+    console.log("Deleting cache folder", todaysCacheFolder);
+    if (fs.existsSync(todaysCacheFolder)) {
+        fs.rmdirSync(todaysCacheFolder, { recursive: true });
+    }
+}
+
 for (const token of args.token) {
     // verify token has correct format
     if (!/^[-A-Za-z0-9+\/=\._]+$/.test(token)) {
@@ -69,8 +81,7 @@ function hashToken(token) {
 async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     // hash token to get a unique folder for each user
     const hashedToken = hashToken(token)
-    const dateString = new Date().toISOString().slice(0, 10);  //yyyy_mm_dd
-    const dateStringLong = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace("T", "--");  // yyyy_mm_dd_hh_mm_ss
+    const dateStringLong = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace("T", "--");  // yyyy-mm-dd--hh-mm-ss
     const CACHE_FOLDER = `cache/${dateString}/`;
     const CACHE_FOLDER_NO_DATE = `cache/`;
 
