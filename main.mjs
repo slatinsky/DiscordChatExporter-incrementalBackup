@@ -50,6 +50,13 @@ if (!Array.isArray(args.token)) {
 }
 args.output = args.output.replace(/\\/g, "/")
 
+for (const token of args.token) {
+    // verify token has correct format
+    if (!/^[-A-Za-z0-9+\/=\._]+$/.test(token)) {
+        console.log(clc.red('TOKEN'), token, clc.red('LOOKS INVALID, EXITING'));
+        process.exit(1);
+    }
+}
 
 function hashToken(token) {
     return crypto.createHash('sha256').update(token).digest('hex').slice(0, 10)

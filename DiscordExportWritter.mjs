@@ -66,10 +66,19 @@ export class DiscordExportWritter {
     }
 
     async downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, OUTPUT_FOLDER) {
+
+
         let channelTypeDebug = clc.blue("channel")
         if (channel.type === 11) {
             channelTypeDebug = clc.magenta("thread")
         }
+
+        // verify if channel_id is numeric to avoid command injection
+        if (!/^\d+$/.test(channel.id)) {
+            console.log(channelTypeDebug, clc.red('ID'), channel.id, clc.red('ID IS NOT NUMERIC, SKIPPING DOWNLOAD'));
+            return;
+        }
+
         if (ignoreChannelIds.includes(channel.id)) {
             console.log(`Ignoring ${channelTypeDebug} ${clc.yellow(channel.name)}, because it was already downloaded`);
             return ignoreChannelIds
@@ -84,7 +93,6 @@ export class DiscordExportWritter {
         }
         else if (!lastMessageIds[channel.id]) {
             console.log(`${clc.green('New')} ${channelTypeDebug} ${clc.yellow(channel.name)} with messages`, );
-            // TODO: FIX POSSIBLE COMMAND INJECTION
             await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
@@ -96,7 +104,6 @@ export class DiscordExportWritter {
         }
         else {
             console.log(`${clc.green('More messages')} found in ${channelTypeDebug} ${clc.yellow(channel.name)}`);  // sometimes is false positive if the last message was deleted
-            // TODO: FIX POSSIBLE COMMAND INJECTION
             await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
