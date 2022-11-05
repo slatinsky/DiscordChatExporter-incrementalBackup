@@ -63,7 +63,7 @@ export class DiscordApi {
         if (response.status === 429) {
             console.log("Rate limited (429: Retry after", json.retry_after, "s)");
             await new Promise(r => setTimeout(r, (json.retry_after + 1) * 1156));
-            return this.discordFetch(endpoint);
+            return this.discordFetch(endpoint, fileName);
         }
         if (json.message) {
             console.error("Error:", json.message, json.code, endpoint);

@@ -2,22 +2,21 @@
 Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Discord channels, including threads and forum posts.
 
 ## Features
-- Incremental backups
-- Tries to export only new channels or channels with new messages
+- Incremental backups (with no overlappping messages)
+- Skips channels with no new messages
 - Forums and thread downloads are supported (only archived threads are downloaded)
 - Use user tokens or (WIP) bot tokens
 - Excessive delays between requests to avoid being rate limited
 
-## Bestiary
+## Acronyms
 - Guild - A Discord server (discords servers are internally called guilds)
 - Channel - A Discord channel
-- Thread - A Discord thread. Forum posts are threads too.
+- Thread - A Discord thread or forum post (forum posts are threads too)
 - WIP - Work in progress - not implemented yet
 
-## Limitations
-The script is made to be run only once per day. Unexpected behavior may occur if you run it more often.
-
 ## Quick start (Windows)
+(NOTE: binaries are not available yet, run from source for now)
+
 Prebuilt binaries are provided for a convenience. For scripts that interact with sensitive data (like your discord token) is good practice to build the binaries yourself or run them from source, so you can verify that the code is safe.
 
 0. Add folder that includes `DiscordChatExporter.Cli.exe` to your PATH environment variable and restart your terminal.
@@ -53,6 +52,8 @@ The tokens are used in order they are supplied. If the first token can't access 
 (WIP) If you use bot token, prefix it with `Bot ` and don't forget to use quotes around the token.
 If you use user token, don't prefix it with anything. Quotes around the token are not needed.
 
+NOTE: Bot token support is not finished yet, so you can't use bot tokens yet.
+
 Need help getting your token? Check out [this guide](https://github.com/Tyrrrz/DiscordChatExporter/wiki/Obtaining-Token-and-Channel-IDs#how-to-get-user-token)
 
 ### --output (required)
@@ -86,34 +87,36 @@ Default: false
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with bot token.
 NOTE: Bot token support is not finished yet, so you can't use bot tokens yet.
 ```bash
-node main.mjs exportguild --guild 123456789012345678 --token "Bot eW91cg.ZGlzY29yZCBib3Q.dG9rZW4" --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token "Bot eW91cg.ZGlzY29yZCBib3Q.dG9rZW4" --output "C:\Users\user\Documents\DiscordChatExporter-frontend\static\input"
 ```
 
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token.
 ```bash
-node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordChatExporter-frontend\static\input"
 ```
 
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token and also use another user token if the first one can't access a channel.
 ```bash
-node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4x --token eW91cg.dXNlcg.dG9rZW4y --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4x --token eW91cg.dXNlcg.dG9rZW4y --output "C:\Users\user\Documents\DiscordChatExporter-frontend\static\input"
 ```
 
 Create incremental backup only of channels with id `9700123456789012345678` and `9700234567890123456789` and their threads and forum posts in guild with id `123456789012345678` with user token.
 ```bash
-node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups" --whitelist 9700123456789012345678,9700234567890123456789
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordChatExporter-frontend\static\input" --whitelist 9700123456789012345678,9700234567890123456789
 ```
 
 
 
 ### Future plans
+- Download unarchived threads/forum posts
+- Add fastupdate X mode that will only check last X threads for each channel (1 request per channel), not all of them
 - Add support for bot tokens
-- Add support for incremental backups of direct messages
-- Add fastupdate mode that will only check last 25 threads for each channel (1 request per channel), not all of them
 - rewrite to TypeScript
+- Add support for incremental backups of direct messages
 
 ### Known issues
-- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted and no other new messages exist. The script keeps track of exported last message ids in channels, so it won't try to export it again.
+- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted and no other new messages exist. The script keeps track of exported last message ids in channels (`cache/blacklisted_ids.json`), so it won't try to export it again.
+- The script expects you to run it only once per day. If you want to make another incremental backup on the same day, use --deletecache.
 
 ## Warnings
 ### → NEVER SHARE YOUR TOKEN ←
