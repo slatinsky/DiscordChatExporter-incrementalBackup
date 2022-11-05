@@ -336,12 +336,39 @@ async function downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds
     return ignoreChannelIds
 }
 
+async function saveChannelThreadInfo(guildCacheFolder, savePathFolder) {
+    // read channels.json
+    const channelsJson = JSON.parse(fs.readFileSync(`${guildCacheFolder}/channels.json`));
+
+    // read all jsons in threads folder
+    const threadFiles = await globby(`${guildCacheFolder}/threads/**/*.json`);
+    let threads = [];
+    for (const threadFile of threadFiles) {
+        const threadJson = JSON.parse(fs.readFileSync(threadFile));
+        threads.push(threadJson.threads);
+    }
+
+    // save channel info
+    const channelInfo = {
+        "channels": channelsJson,
+        "threads": threads,
+        "timestamp": moment().utcOffset(0).format(),
+        "type": "channelThreadInfo"
+    }
+    // crerate folder if not exists
+    if (!fs.existsSync(savePathFolder)) {
+        fs.mkdirSync(savePathFolder, { recursive: true });
+    }
+    fs.writeFileSync(`${savePathFolder}/channel_info.json`, JSON.stringify(channelInfo, null, 4));
+}
+
 async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     // hash token to get a unique folder for each user
     const hashedToken = hashToken(token)
     const dateString = new Date().toISOString().slice(0, 10);  //yyyy_mm_dd
     // const dateString = new Date().toISOString().slice(0, 19).replace(/:/g, '-');  // yyyy_mm_dd_hh_mm_ss
     const CACHE_FOLDER = `cache/${dateString}/`;
+    const CACHE_FOLDER_NO_DATE = `cache/`;
 
 
     // if OUTPUT_FOLDER does not exist, create it
@@ -359,11 +386,15 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
 
     const OUTPUT_FOLDER = args.output.replace(/\\/g, "/") + "/automated/" + args.guild + "/" + safeUserName + "/" + dateString + "/";
 
+    // const metadataJson = JSON.parse(fs.readFileSync(`${CACHE_FOLDER_NO_DATE}/crawl.json`));
+
     console.log(`Logged in as ${clc.green(userName)}`);
     // const commands = []
     for (const channel of allowedChannels) {
         ignoreChannelIds = await downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord)
     }
+
+    await saveChannelThreadInfo(CACHE_FOLDER + "/guilds/" + args.guild + "/", OUTPUT_FOLDER);
     return ignoreChannelIds;
 }
 
