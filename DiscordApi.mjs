@@ -13,6 +13,10 @@ export class DiscordApi {
         this.hashedToken = hashedToken;
     }
 
+    getToken() {
+        return this.token;
+    }
+
     async saveToFile(fileName, json) {
         fs.writeFileSync(this.CACHE_FOLDER + fileName, JSON.stringify(json, null, 2));
     }

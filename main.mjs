@@ -83,9 +83,9 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     console.log(`Logged in as ${clc.green(userName)}`);
     // const commands = []
 
-    const discordWritter = new DiscordExportWritter(args.guild, args.dryrun, args.checkall);
+    const discordWritter = new DiscordExportWritter(args.guild, discordApi, args.dryrun, args.checkall);
     for (const channel of allowedChannels) {
-        ignoreChannelIds = await discordWritter.downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discordApi)
+        ignoreChannelIds = await discordWritter.downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER)
     }
 
     await discordWritter.saveChannelThreadInfo(CACHE_FOLDER + "/guilds/" + args.guild + "/", OUTPUT_FOLDER);

@@ -8,14 +8,32 @@ import { paranoidSleep } from './helpers.mjs';
 
 
 export class DiscordExportWritter {
-    constructor(guildId, isDryRun, shouldCheckAll) {
+    constructor(guildId, discordApi, isDryRun, shouldCheckAll) {
         this.guildId = guildId;
+        this.discordApi = discordApi;
+        this.token = discordApi.getToken();
         this.isDryRun = isDryRun;
         this.shouldCheckAll = shouldCheckAll;
     }
 
+    getBlacklistedLastMessageIds() {
+        let blacklistedIds = [];
+        if (fs.existsSync(`cache/blacklisted_ids.json`)) {
+            blacklistedIds = JSON.parse(fs.readFileSync(`cache/blacklisted_ids.json`));
+        }
+        return blacklistedIds
+    }
 
-    async execCommand(command) {
+    markAsBlacklisted(lastMessageId) {
+        let blacklistedIds = this.getBlacklistedLastMessageIds();
+        blacklistedIds.push(lastMessageId);
+        // deduplicate
+        blacklistedIds = [...new Set(blacklistedIds)];
+        fs.writeFileSync(`cache/blacklisted_ids.json`, JSON.stringify(blacklistedIds, null, 4));
+    }
+
+
+    async execCommand(command, channelLastMessageId) {
         // command = 'ping 1.1.1.1'   // DEBUG
 
         if (!this.isDryRun) {
@@ -26,17 +44,22 @@ export class DiscordExportWritter {
             var child = spawn.sync(cmd, cmd_args, { stdio: 'inherit' });
             if(child.error) {
                 console.log("ERROR: ",child.error);
-                // process.exit(1);
+                process.exit(1);
             }
+
+            // Mark as downloaded, becase sometimes the download is false positive and we don't want to download it again and again.
+            this.markAsBlacklisted(channelLastMessageId);
+
             await paranoidSleep()
         }
         else {
             console.log(command);
         }
 
+
     }
 
-    async downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER, discord) {
+    async downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, OUTPUT_FOLDER) {
         let channelTypeDebug = clc.blue("channel")
         if (channel.type === 11) {
             channelTypeDebug = clc.magenta("thread")
@@ -49,13 +72,17 @@ export class DiscordExportWritter {
             console.log(`No messages in ${channelTypeDebug} ${clc.yellow(channel.name)}`);
             return ignoreChannelIds
         }
+        if (this.getBlacklistedLastMessageIds().includes(channel.last_message_id)) {
+            console.log(`${channelTypeDebug} ${clc.yellow(channel.name)} ${clc.red('has new messages, but it\'s probably false positive, skipping.')}`);  // Delete cache/blacklisted_ids.json to force download.
+            return ignoreChannelIds
+        }
         else if (!lastMessageIds[channel.id]) {
             console.log(`${clc.green('New')} ${channelTypeDebug} ${clc.yellow(channel.name)} with messages`, );
             // TODO: FIX POSSIBLE COMMAND INJECTION
-            await this.execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`);
+            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
-        else if (lastMessageIds[channel.id]['id'] === channel.last_message_id) {
+        else if (BigInt(lastMessageIds[channel.id]['id']) >= BigInt(channel.last_message_id)) {
             console.log(`${channelTypeDebug} ${clc.yellow(channel.name)} is already up to date`);
             if (!this.shouldCheckAll) {  // check all channels for updated threads, not just the ones with new messages?
                 return ignoreChannelIds
@@ -64,14 +91,14 @@ export class DiscordExportWritter {
         else {
             console.log(`${clc.green('More messages')} found in ${channelTypeDebug} ${clc.yellow(channel.name)}`);  // sometimes is false positive if the last message was deleted
             // TODO: FIX POSSIBLE COMMAND INJECTION
-            await this.execCommand(`DiscordChatExporter.Cli export --token ${token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`);
+            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
         if (channel.type === 0 || channel.type === 15) {  // 0=threads, 15=forums
             // download threads/forums
-            const threads = await discord.getThreads(this.guildId, channel.id);
+            const threads = await this.discordApi.getThreads(this.guildId, channel.id);
             for (const thread of threads) {
-                ignoreChannelIds = await this.downloadChannelOrThread(thread, ignoreChannelIds, lastMessageIds, token, OUTPUT_FOLDER + '_threads/', discord);
+                ignoreChannelIds = await this.downloadChannelOrThread(thread, ignoreChannelIds, lastMessageIds, OUTPUT_FOLDER + '_threads/');
             }
         }
         return ignoreChannelIds

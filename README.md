@@ -73,10 +73,11 @@ Default: false
 - Add support for incremental backups direct messages
 - Add fastupdate mode that will only check last 25 threads for each channel (1 request per channel), not all of them
 - hide tokens from logs
+- rewrite to TypeScript
 
 
 ### Known issues
-- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted. This can't be fixed by this script.
+- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted. The script keeps track of last message ids in channels, so it won't try to export it again.
 
 ## Warnings
 ### → NEVER SHARE YOUR TOKEN ←
