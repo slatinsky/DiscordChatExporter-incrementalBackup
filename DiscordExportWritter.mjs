@@ -126,7 +126,7 @@ export class DiscordExportWritter {
         let threads = [];
         for (const threadFile of threadFiles) {
             const threadJson = JSON.parse(fs.readFileSync(threadFile));
-            threads.push(threadJson.threads);
+            threads = threads.concat(threadJson.threads);
         }
 
         // save channel info
