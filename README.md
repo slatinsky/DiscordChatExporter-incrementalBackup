@@ -20,7 +20,7 @@ Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Dis
 Prebuilt binaries are provided for a convenience. For scripts that interact with sensitive data (like your discord token) is good practice to build the binaries yourself or run them from source, so you can verify that the code is safe.
 
 0. Add folder that includes `DiscordChatExporter.Cli.exe` to your PATH environment variable and restart your terminal.
-1. Download the latest release from [here]()
+1. Download the latest release from [here](https://github.com/slatinsky/DiscordChatExporter-incrementalBackup/releases)
 2. Extract the archive
 3. Run `IncrementalBackups.exe` to run the script
 
@@ -36,7 +36,7 @@ Prebuilt binaries are provided for a convenience. For scripts that interact with
 
 ## Usage
 ```bash
-node main.mjs exportguild --guild <guild_id> --token <token1> [--token <token2>] [--token <token3>...]  --output <export_dir> [--dryrun] [--checkall]
+node main.mjs exportguild --guild <guild_id> --token <token1> [--token <token2>] [--token <token3>...]  --output <export_dir> [--dryrun] [--checkall] [--deletecache] [--whitelist <channel_id1,channel_id2,...>]
 ```
 
 ### exportguild
@@ -121,3 +121,11 @@ node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZ
 ## Warnings
 ### → NEVER SHARE YOUR TOKEN ←
 A token gives full access to an account. To reset a user token, change your account password.
+
+## License
+GNU GENERAL PUBLIC LICENSE
+
+## Contributing
+Feel free to open issues and pull requests.
+
+The best way to support this project is to star it here on GitHub.
