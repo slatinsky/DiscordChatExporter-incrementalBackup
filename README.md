@@ -37,11 +37,11 @@ Prebuilt binaries are provided for a convenience. For scripts that interact with
 
 ## Usage
 ```bash
-node main.mjs channels --guild <guild_id> --token <token1> [--token <token2>] [--token <token3>...]  --output <export_dir> [--dryrun] [--checkall]
+node main.mjs exportguild --guild <guild_id> --token <token1> [--token <token2>] [--token <token3>...]  --output <export_dir> [--dryrun] [--checkall]
 ```
 
-### channels
-Make incremental export of all channels in guild.
+### exportguild
+Make incremental export of all channels in guild visible to the token(s) provided.
 
 ### --guild (required)
 Discord guild id you want to backup.
@@ -86,22 +86,22 @@ Default: false
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with bot token.
 NOTE: Bot token support is not finished yet, so you can't use bot tokens yet.
 ```bash
-node main.mjs channels --guild 123456789012345678 --token "Bot eW91cg.ZGlzY29yZCBib3Q.dG9rZW4" --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token "Bot eW91cg.ZGlzY29yZCBib3Q.dG9rZW4" --output "C:\Users\user\Documents\DiscordBackups"
 ```
 
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token.
 ```bash
-node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups"
 ```
 
 Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token and also use another user token if the first one can't access a channel.
 ```bash
-node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4x --token eW91cg.dXNlcg.dG9rZW4y --output "C:\Users\user\Documents\DiscordBackups"
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4x --token eW91cg.dXNlcg.dG9rZW4y --output "C:\Users\user\Documents\DiscordBackups"
 ```
 
 Create incremental backup only of channels with id `9700123456789012345678` and `9700234567890123456789` and their threads and forum posts in guild with id `123456789012345678` with user token.
 ```bash
-node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups" --whitelist 9700123456789012345678,9700234567890123456789
+node main.mjs exportguild --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups" --whitelist 9700123456789012345678,9700234567890123456789
 ```
 
 

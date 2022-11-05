@@ -28,7 +28,7 @@ const args = minimist(process.argv.slice(2), {
         whitelist: '',
     }
 });
-console.log("args", args);
+// console.log("args", args);
 // process.exit(1);
 
 if (args.help) {
@@ -116,7 +116,7 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     return ignoreChannelIds;
 }
 
-if (args._.includes('channels')) {
+if (args._.includes('exportguild')) {
     if (args.guild === '') {
         console.error('No guild provided, use --guild "<guildId>"');
     }
