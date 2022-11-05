@@ -12,7 +12,7 @@ Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Dis
 - Guild - A Discord server (discords servers are internally called guilds)
 - Channel - A Discord channel
 - Thread - A Discord thread. Forum posts are threads too.
-- WIP - Work in progress
+- WIP - Work in progress - not implemented yet
 
 ## Limitations
 The script is made to be run only once per day. Unexpected behavior may occur if you run it more often.
@@ -53,6 +53,8 @@ The tokens are used in order they are supplied. If the first token can't access 
 (WIP) If you use bot token, prefix it with `Bot ` and don't forget to use quotes around the token.
 If you use user token, don't prefix it with anything. Quotes around the token are not needed.
 
+Need help getting your token? Check out [this guide](https://github.com/Tyrrrz/DiscordChatExporter/wiki/Obtaining-Token-and-Channel-IDs#how-to-get-user-token)
+
 ### --output (required)
 Output directory where your exports are be stored. If you already have Json exports, place them to this directory and they will be used as a base for the incremental backup.
 
@@ -70,7 +72,7 @@ Check all channels for updated threads/forum_posts even if the channel has no ne
 Default: false
 
 ### --whitelist <channel_id1,channel_id2,...> (optional)
-Comma separated whitelist of channel IDs to backup.
+Comma separated whitelist of channel IDs to backup. Don't use spaces between channel IDs.
 Doesn't affect forum_posts and threads.
 
 Default: all channels the token has access to
@@ -80,16 +82,38 @@ Cache files are used if you use the script multiple times in a day or to continu
 
 Default: false
 
+## Example commands
+Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with bot token.
+NOTE: Bot token support is not finished yet, so you can't use bot tokens yet.
+```bash
+node main.mjs channels --guild 123456789012345678 --token "Bot eW91cg.ZGlzY29yZCBib3Q.dG9rZW4" --output "C:\Users\user\Documents\DiscordBackups"
+```
+
+Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token.
+```bash
+node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups"
+```
+
+Create incremental backup of all channels, threads and forum posts in guild with id `123456789012345678` with user token and also use another user token if the first one can't access a channel.
+```bash
+node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4x --token eW91cg.dXNlcg.dG9rZW4y --output "C:\Users\user\Documents\DiscordBackups"
+```
+
+Create incremental backup only of channels with id `9700123456789012345678` and `9700234567890123456789` and their threads and forum posts in guild with id `123456789012345678` with user token.
+```bash
+node main.mjs channels --guild 123456789012345678 --token eW91cg.dXNlcg.dG9rZW4 --output "C:\Users\user\Documents\DiscordBackups" --whitelist 9700123456789012345678,9700234567890123456789
+```
+
+
+
 ### Future plans
 - Add support for bot tokens
-- Add support for incremental backups direct messages
+- Add support for incremental backups of direct messages
 - Add fastupdate mode that will only check last 25 threads for each channel (1 request per channel), not all of them
-- hide tokens from logs
 - rewrite to TypeScript
 
-
 ### Known issues
-- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted. The script keeps track of last message ids in channels, so it won't try to export it again.
+- Sometimes you will see `Failed to export 1 channel(s). No messages found for the specified period.`. That happens if the newest message in channel was deleted and no other new messages exist. The script keeps track of exported last message ids in channels, so it won't try to export it again.
 
 ## Warnings
 ### → NEVER SHARE YOUR TOKEN ←
