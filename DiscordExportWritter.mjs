@@ -35,9 +35,11 @@ export class DiscordExportWritter {
 
     async execCommand(command, channelLastMessageId) {
         // command = 'ping 1.1.1.1'   // DEBUG
-
+        const commandRedacted = command.replace(/--token [-A-Za-z0-9+\/=\.]+/, '--token <REDACTED>');
         if (!this.isDryRun) {
-            console.log(command);
+            // regex replace token
+
+            console.log(clc.blackBright(commandRedacted));
             // console.log('NOT DRY RUN');
             let cmd_args = parseArgsStringToArgv(command);
             let cmd = cmd_args.shift();
@@ -53,10 +55,8 @@ export class DiscordExportWritter {
             await paranoidSleep()
         }
         else {
-            console.log(command);
+            console.log(clc.blackBright(commandRedacted));
         }
-
-
     }
 
     async downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, OUTPUT_FOLDER) {
