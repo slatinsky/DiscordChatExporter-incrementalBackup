@@ -35,7 +35,13 @@ export class DiscordExportWritter {
 
     async execCommand(command, channelLastMessageId) {
         // command = 'ping 1.1.1.1'   // DEBUG
-        const commandRedacted = command.replace(/--token [-A-Za-z0-9+\/=\.]+/, '--token <REDACTED>');
+        const commandRedacted = command.replace(/--token [-A-Za-z0-9+\/=\._]+/, '--token <REDACTED>');
+
+        if (!fs.existsSync('cache/logs')) {
+            fs.mkdirSync('cache/logs', { recursive: true });
+        }
+        fs.appendFileSync('cache/logs/commands.txt', commandRedacted + "\n");
+
         if (!this.isDryRun) {
             // regex replace token
 
