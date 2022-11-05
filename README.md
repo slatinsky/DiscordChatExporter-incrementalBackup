@@ -1,17 +1,18 @@
 # Incremental discord backups
-Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Discord channels.
-
-## Bestiary
-- Guild - A Discord server
-- Channel - A Discord channel
-- Thread - A Discord thread. Forum posts are threads too.
+Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Discord channels, including threads and forum posts.
 
 ## Features
 - Incremental backups
 - Tries to export only new channels or channels with new messages
 - Forums and thread downloads are supported (only archived threads are downloaded)
 - Use user tokens or (WIP) bot tokens
-- Paranoid mode - excessive delays between requests to avoid being rate limited
+- Excessive delays between requests to avoid being rate limited
+
+## Bestiary
+- Guild - A Discord server (discords servers are internally called guilds)
+- Channel - A Discord channel
+- Thread - A Discord thread. Forum posts are threads too.
+- WIP - Work in progress
 
 ## Limitations
 The script is made to be run only once per day. Unexpected behavior may occur if you run it more often.
@@ -43,13 +44,13 @@ node main.mjs channels --guild <guild_id> --token <token1> [--token <token2>] [-
 Make incremental export of all channels in guild.
 
 ### --guild (required)
-Discord guild id you want to backup (discords servers are internally called guilds)
+Discord guild id you want to backup.
 
 ### --token (required)
 Supply tokens that have access to the guild you want to backup. Usefull if the previous token can't access all channels.
 The tokens are used in order they are supplied. If the first token can't access a channel, the next token is used.
 
-If you use bot token, prefix it with `Bot ` and don't forget to use quotes around the token.
+(WIP) If you use bot token, prefix it with `Bot ` and don't forget to use quotes around the token.
 If you use user token, don't prefix it with anything. Quotes around the token are not needed.
 
 ### --output (required)
@@ -67,6 +68,12 @@ Default: false
 Check all channels for updated threads/forum_posts even if the channel has no new messages. Usefull for FIRST time backups if you already made Json exports without this tool in the past and need to download threads and forum posts. Not needed otherwise and wastes discord api calls.
 
 Default: false
+
+### --whitelist <channel_id1,channel_id2,...> (optional)
+Comma separated whitelist of channel IDs to backup.
+Doesn't affect forum_posts and threads.
+
+Default: all channels the token has access to
 
 ### Future plans
 - Add support for bot tokens

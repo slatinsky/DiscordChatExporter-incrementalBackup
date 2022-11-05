@@ -11,7 +11,7 @@ import { DiscordExportWritter } from './DiscordExportWritter.mjs';
 
 
 const args = minimist(process.argv.slice(2), {
-    string: ['token', 'guild', 'output'],
+    string: ['token', 'guild', 'output', 'whitelist'],
     boolean: ['help', 'dryrun'],
     alias: {
         t: 'token',
@@ -22,7 +22,8 @@ const args = minimist(process.argv.slice(2), {
         dryrun: false,
         token: '',
         guild: '',
-        output: ''
+        output: '',
+        whitelist: '',
     }
 });
 console.log("args", args);
@@ -34,6 +35,7 @@ if (args.help) {
     console.log('  channels --token <token1> [--token <token2> ...] --guild <guildId> --output "<export_folder_path>"');
     console.log('  add --dryrun to only print the commands to be executed');
     console.log('  add --checkall to check all channels for updated threads, not just the ones with new messages');
+    console.log('  add --whitelist <channelid1,channelid2,...> to download only the specified channel ids');
     process.exit(1);
 }
 
@@ -49,6 +51,7 @@ if (!Array.isArray(args.token)) {
     args.token = [args.token];
 }
 args.output = args.output.replace(/\\/g, "/")
+args.whitelist = args.whitelist.split(",").map(x => x.trim()).filter(x => x !== "")
 
 for (const token of args.token) {
     // verify token has correct format
@@ -67,7 +70,7 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     // hash token to get a unique folder for each user
     const hashedToken = hashToken(token)
     const dateString = new Date().toISOString().slice(0, 10);  //yyyy_mm_dd
-    // const dateString = new Date().toISOString().slice(0, 19).replace(/:/g, '-');  // yyyy_mm_dd_hh_mm_ss
+    const dateStringLong = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace("T", "--");  // yyyy_mm_dd_hh_mm_ss
     const CACHE_FOLDER = `cache/${dateString}/`;
     const CACHE_FOLDER_NO_DATE = `cache/`;
 
@@ -79,11 +82,14 @@ async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
     // }
     const discordApi = new DiscordApi(token, CACHE_FOLDER, hashedToken);
 
-    const allowedChannels = await discordApi.getAllowedChannels(args.guild);
+    let allowedChannels = await discordApi.getAllowedChannels(args.guild)
+    if (args.whitelist.length > 0) {
+        allowedChannels = allowedChannels.filter(channel => args.whitelist.includes(channel.id));
+    }
     const userName = (await discordApi.getUserProfile()).username;
     const safeUserName = userName.replace(/[^a-zA-Z0-9]/gi, '')
 
-    const OUTPUT_FOLDER = args.output + "/automated/" + args.guild + "/" + safeUserName + "/" + dateString + "/";
+    const OUTPUT_FOLDER = args.output + "/automated/" + args.guild + "/" + safeUserName + "/" + dateStringLong + "/";
 
     // const metadataJson = JSON.parse(fs.readFileSync(`${CACHE_FOLDER_NO_DATE}/crawl.json`));
 
