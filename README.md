@@ -1,6 +1,8 @@
 # Incremental discord backups
 Simple wrapper for Tyrrrz/DiscordChatExporter to make incremental backups of Discord channels, including threads and forum posts.
 
+**WARNING: this project is work in progress and not ready for use yet.** It currently works only for guild exports with user token.
+
 ## Features
 - Incremental backups (with no overlappping messages)
 - Skips channels with no new messages
