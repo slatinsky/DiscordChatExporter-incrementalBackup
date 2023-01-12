@@ -93,7 +93,7 @@ export class DiscordExportWritter {
         }
         else if (!lastMessageIds[channel.id]) {
             console.log(`${clc.green('New')} ${channelTypeDebug} ${clc.yellow(channel.name)} with messages`, );
-            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
+            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --fuck-russia --channel ${channel.id} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
         else if (BigInt(lastMessageIds[channel.id]['id']) >= BigInt(channel.last_message_id)) {
@@ -104,7 +104,7 @@ export class DiscordExportWritter {
         }
         else {
             console.log(`${clc.green('More messages')} found in ${channelTypeDebug} ${clc.yellow(channel.name)}`);  // sometimes is false positive if the last message was deleted
-            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
+            await this.execCommand(`DiscordChatExporter.Cli export --token ${this.token} --format Json --media --reuse-media --fuck-russia --channel ${channel.id} --after ${moment(lastMessageIds[channel.id]['timestamp']).utcOffset(0).add(1, 'seconds').format()} --output ${OUTPUT_FOLDER}`, channel.last_message_id);
             ignoreChannelIds.push(channel.id);
         }
         if (channel.type === 0 || channel.type === 15) {  // 0=threads, 15=forums
