@@ -120,6 +120,7 @@ export class DiscordExportWritter {
     async saveChannelThreadInfo(guildCacheFolder, savePathFolder) {
         // read channels.json
         const channelsJson = JSON.parse(fs.readFileSync(`${guildCacheFolder}/channels.json`));
+        const guildInfo = JSON.parse(fs.readFileSync(`${guildCacheFolder}/guild.json`));
 
         // read all jsons in threads folder
         const threadFiles = await globby(`${guildCacheFolder}/threads/**/*.json`);
@@ -142,5 +143,6 @@ export class DiscordExportWritter {
             fs.mkdirSync(savePathFolder, { recursive: true });
         }
         fs.writeFileSync(`${savePathFolder}/channel_info.json`, JSON.stringify(channelInfo, null, 4));
+        fs.writeFileSync(`${savePathFolder}/guild_info.json`, JSON.stringify(guildInfo, null, 4));
     }
 }

@@ -80,6 +80,12 @@ export class DiscordApi {
         return json;
     }
 
+    async getGuild(guildId) {
+        const fileName = `guilds/${guildId}/guild.json`
+        const guildInfo = await this.discordFetch(`guilds/${guildId}`, fileName);
+        return guildInfo;
+    }
+
     async getChannels(guildId) {
         const fileName = `guilds/${guildId}/channels.json`
         const channels = await this.discordFetch(`guilds/${guildId}/channels`, fileName);
@@ -144,6 +150,7 @@ export class DiscordApi {
     async getAllowedChannels(guildId) {
         console.log("Getting channels for guild", guildId);
         let channels = await this.getChannels(guildId);
+        let guildInfo = await this.getGuild(guildId);
         let userProfile = await this.getUserProfile()
         let guildProfile = await this.getGuildUserProfile(userProfile.id, guildId);
 
