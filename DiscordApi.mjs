@@ -109,13 +109,13 @@ export class DiscordApi {
     async hasChannelViewPermission(channels, channelId, roles) {
         const channel = channels.find(c => c.id === channelId);
 
-        if (channel.parent_id !== null) {
-            const hasParentPermission = await this.hasChannelViewPermission(channels, channel.parent_id, roles);
-            if (!hasParentPermission) {
-                // console.log("No permission to view channel", channel.name, "because parent category is not visible");
-                return false;
-            }
-        }
+        // if (channel.parent_id !== null) {
+        //     const hasParentPermission = await this.hasChannelViewPermission(channels, channel.parent_id, roles);
+        //     if (!hasParentPermission) {
+        //         // console.log("No permission to view channel", channel.name, "because parent category is not visible");
+        //         return false;
+        //     }
+        // }
 
         let guildId = channel.guild_id;
         const VIEW_CHANNEL = 1024
