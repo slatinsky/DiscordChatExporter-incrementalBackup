@@ -1,0 +1,26 @@
+{
+    "tokens": [
+        {
+            "name": "myaccount1",
+            "value": "tokenvaluehere"
+        },
+        {
+            "name": "myaccount2",
+            "value": "tokenvaluehere"
+        }
+    ],
+    "guilds": [
+        {
+            "tokenName": "myaccount1",
+            "guildId": "869237470565392384",
+            "guildName": "tyrrrz",
+            "enabled": true
+        },
+        {
+            "tokenName": "myaccount2",
+            "guildId": "869237470565372385",
+            "guildName": "another-guild",
+            "enabled": true
+        }
+    ]
+}

@@ -1,140 +1,126 @@
-import minimist from 'minimist';
-import crypto from 'crypto';
-import clc from 'cli-color';
 import fs from 'fs';
+import { parseArgsStringToArgv } from 'string-argv';
+import clc from 'cli-color';
+import { spawn } from 'cross-spawn';
 
-
-import { DiscordApi } from './DiscordApi.mjs';
-import { DiscordExportReader } from './DiscordExportReader.mjs';
-import { DiscordExportWritter } from './DiscordExportWritter.mjs';
-
-
-
-
-const args = minimist(process.argv.slice(2), {
-    string: ['token', 'guild', 'output', 'whitelist'],
-    boolean: ['help', 'dryrun', 'deletecache'],
-    alias: {
-        t: 'token',
-        g: 'guild'
-    },
-    default: {
-        help: false,
-        dryrun: false,
-        deletecache: false,
-        token: '',
-        guild: '',
-        output: '',
-        whitelist: '',
+function createDirectory(path) {
+    try {
+        fs.mkdirSync(path);
     }
-});
-// console.log("args", args);
-// process.exit(1);
-
-if (args.help) {
-    console.error('## Discord export helper ##')
-    console.log('Available commands:');
-    console.log('  channels --token <token1> [--token <token2> ...] --guild <guildId> --output "<export_folder_path>"');
-    console.log('  add --dryrun to only print the commands to be executed');
-    console.log('  add --checkall to check all channels for updated threads, not just the ones with new messages');
-    console.log('  add --whitelist <channelid1,channelid2,...> to download only the specified channel ids');
-    console.log('  add --deletecache to delete previous cache');
-    process.exit(1);
-}
-
-// check if token is provided
-if (args.token === '') {
-    console.error('No token provided, use --token "<token>"');
-    process.exit(1);
-}
-
-// PREPROCESS ARGS
-// if args.token is not an array, make it one
-if (!Array.isArray(args.token)) {
-    args.token = [args.token];
-}
-args.output = args.output.replace(/\\/g, "/")
-args.whitelist = args.whitelist.split(",").map(x => x.trim()).filter(x => x !== "")
-
-const dateString = new Date().toISOString().slice(0, 10);  //yyyy-mm-dd
-if (args.deletecache) {
-    let todaysCacheFolder = `cache/${dateString}/`;
-    console.log("Deleting cache folder", todaysCacheFolder);
-    if (fs.existsSync(todaysCacheFolder)) {
-        fs.rmdirSync(todaysCacheFolder, { recursive: true });
+    catch (e) {
+        if (e.code !== 'EEXIST') throw e;
     }
 }
 
-for (const token of args.token) {
-    // verify token has correct format
-    if (!/^[-A-Za-z0-9+\/=\._]+$/.test(token)) {
-        console.log(clc.red('TOKEN'), token, clc.red('LOOKS INVALID, EXITING'));
+
+class CacheMetadata {
+    constructor() {
+        this.config = {}
+        createDirectory("./exports");
+        this.read();
+    }
+
+    read() {
+        if (fs.existsSync("./exports/metadata.json")) {
+            this.config = JSON.parse(fs.readFileSync("./exports/metadata.json"));
+        }
+        else {
+            this.config = {};
+        }
+    }
+
+    save() {
+        fs.writeFileSync("./exports/metadata.json", JSON.stringify(this.config, null, 2));
+    }
+
+    get(category, key) {
+        this.read();
+        if (!this.config[category]) {
+            return null;
+        }
+        return this.config[category][key];
+    }
+
+    set(category, key, value) {
+        this.read();
+        if (!this.config[category]) {
+            this.config[category] = {};
+        }
+        this.config[category][key] = value;
+        this.save();
+    }
+}
+
+
+async function execCommand(command) {
+    const commandRedacted = command.replace(/--token [-A-Za-z0-9+\/=\._]+/, '--token <REDACTED>');
+    console.log(clc.blackBright(commandRedacted));
+    let cmd_args = parseArgsStringToArgv(command);
+    let cmd = cmd_args.shift();
+    var child = spawn.sync(cmd, cmd_args, { stdio: 'inherit' });
+    if(child.error) {
+        console.log("ERROR: ",child.error);
         process.exit(1);
     }
 }
 
-function hashToken(token) {
-    return crypto.createHash('sha256').update(token).digest('hex').slice(0, 10)
-}
-
-
-async function exportChannels(token, ignoreChannelIds, lastMessageIds) {
-    // hash token to get a unique folder for each user
-    const hashedToken = hashToken(token)
-    const dateStringLong = new Date().toISOString().slice(0, 19).replace(/:/g, '-').replace("T", "--");  // yyyy-mm-dd--hh-mm-ss
-    const CACHE_FOLDER = `cache/${dateString}/`;
-    const CACHE_FOLDER_NO_DATE = `cache/`;
-
-
-    // if OUTPUT_FOLDER does not exist, create it
-    // if (fs.existsSync(OUTPUT_FOLDER)) {
-    //     console.log("Today's backup was already done for this token, aborting");
-    //     return ignoreChannelIds
-    // }
-    const discordApi = new DiscordApi(token, CACHE_FOLDER, hashedToken);
-
-    let allowedChannels = await discordApi.getAllowedChannels(args.guild)
-    if (args.whitelist.length > 0) {
-        allowedChannels = allowedChannels.filter(channel => args.whitelist.includes(channel.id));
-    }
-    const userName = (await discordApi.getUserProfile()).username;
-    const safeUserName = userName.replace(/[^a-zA-Z0-9]/gi, '')
-
-    const OUTPUT_FOLDER = args.output + "/automated/" + args.guild + "/" + safeUserName + "/" + dateStringLong + "/";
-
-    // const metadataJson = JSON.parse(fs.readFileSync(`${CACHE_FOLDER_NO_DATE}/crawl.json`));
-
-    console.log(`Logged in as ${clc.green(userName)}`);
-    // const commands = []
-
-    const discordWritter = new DiscordExportWritter(args.guild, discordApi, args.dryrun, args.checkall);
-    for (const channel of allowedChannels) {
-        ignoreChannelIds = await discordWritter.downloadChannelOrThread(channel, ignoreChannelIds, lastMessageIds, OUTPUT_FOLDER)
+class Exporter {
+    constructor(token, guildid, guildname) {
+        this.token = token;
+        this.guildId = guildid;
+        this.guildName = guildname;
+        this.metadata = new CacheMetadata();
+        createDirectory("./exports");
+        createDirectory("./exports/" + this.guildName);
     }
 
-    await discordWritter.saveChannelThreadInfo(CACHE_FOLDER + "/guilds/" + args.guild + "/", OUTPUT_FOLDER);
-    return ignoreChannelIds;
-}
+    async export() {
+        let lastTimestamp = this.metadata.get("lastExportsTimestamps", this.guildId);
+        let nowTimestamp = new Date().toISOString()  // example 2023-08-26T02:46:30.229Z
+        const nowTimestampFolder = nowTimestamp.slice(0, 19).replace(/:/g, '-').replace("T", "--");  // example 2023-08-26--02-46-30
+        console.log("lastTimestamp", lastTimestamp);
+        console.log("nowTimestamp", nowTimestamp);
 
-if (args._.includes('exportguild')) {
-    if (args.guild === '') {
-        console.error('No guild provided, use --guild "<guildId>"');
-    }
-    if (args.output === '') {
-        console.error('No exports folder provided, use --output "<export_folder_path>"');
-    }
-    else {
-        const INPUT_FOLDER = args.output
-        const discordExport = new DiscordExportReader(INPUT_FOLDER);
-        const lastMessageIds = await discordExport.findLastMessageIds()
+        // base command
+        let command = `DiscordChatExporter.Cli exportguild --include-threads --include-archived-threads --format Json --media --reuse-media --fuck-russia --markdown false --token ${this.token} --guild ${this.guildId} --media-dir 'exports/${this.guildName}/_media/' --output 'exports/${this.guildName}/${nowTimestampFolder}/'`
 
-        let ignoreChannelIds = [];
-        for (const token of args.token) {
-            console.log("\n\n\n\n\n");
-            ignoreChannelIds = await exportChannels(token, ignoreChannelIds, lastMessageIds);
+        if (lastTimestamp != null) {
+            // if not first export
+            command += ` --after '${lastTimestamp}'`
         }
+        await execCommand(command)
+
+        // after export is confirmed to be done, save the timestamp
+        // if users cancels the export, the timestamp will not be saved and the export will be tried again next time
+        this.metadata.set("lastExportsTimestamps", this.guildId, nowTimestamp);
     }
 }
-else {
-    console.error('Unknown command:', args._[0]);
+
+
+if (!fs.existsSync("./config.json")) {
+    console.log("./config.json does not exist")
+    console.log('fill in config.json to get started');
+    process.exit(1);
+}
+
+const config = JSON.parse(fs.readFileSync("./config.json"));
+
+const tokens = {}
+
+for (const token of config.tokens) {
+    tokens[token['name']] = token['value']
+}
+
+
+for (const guild of config.guilds) {
+    if (!tokens[guild.tokenName]) {
+        console.log("tokenName not found in tokens, check config.json")
+        process.exit(1);
+    }
+    if (!guild.enabled) {
+        console.log("skipping disabled guild", guild.guildName)
+        continue;
+    }
+    const exporter = new Exporter(tokens[guild.tokenName], guild.guildId, guild.guildName);
+    exporter.export();
 }
