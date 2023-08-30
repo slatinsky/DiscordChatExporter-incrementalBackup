@@ -1,11 +1,11 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import { parseArgsStringToArgv } from 'string-argv';
 import clc from 'cli-color';
 import { spawn } from 'cross-spawn';
 
-function createDirectory(path) {
+async function createDirectory(path) {
     try {
-        fs.mkdirSync(path);
+        await fs.mkdir(path, { recursive: true });
     }
     catch (e) {
         if (e.code !== 'EEXIST') throw e;
@@ -16,38 +16,44 @@ function createDirectory(path) {
 class CacheMetadata {
     constructor() {
         this.config = {}
-        createDirectory("./exports");
+        this.filePath = "./exports/metadata.json";
         this.read();
     }
 
-    read() {
-        if (fs.existsSync("./exports/metadata.json")) {
-            this.config = JSON.parse(fs.readFileSync("./exports/metadata.json"));
-        }
-        else {
-            this.config = {};
+    async read() {;
+        try {
+            const data = await fs.readFile(this.filePath, 'utf8')
+            this.config = JSON.parse(data);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                await createDirectory("./exports");
+                await fs.writeFile(filePath, JSON.stringify({}))
+                this.config = {};
+            } else {
+                throw err;
+            }
         }
     }
 
-    save() {
-        fs.writeFileSync("./exports/metadata.json", JSON.stringify(this.config, null, 2));
+    async save() {
+        await fs.writeFile(this.filePath, JSON.stringify(this.config, null, 2))
     }
 
-    get(category, key) {
-        this.read();
+    async get(category, key) {
+        await this.read();
         if (!this.config[category]) {
             return null;
         }
         return this.config[category][key];
     }
 
-    set(category, key, value) {
-        this.read();
+    async set(category, key, value) {
+        await this.read();
         if (!this.config[category]) {
             this.config[category] = {};
         }
         this.config[category][key] = value;
-        this.save();
+        await this.save();
     }
 }
 
@@ -70,12 +76,13 @@ class Exporter {
         this.guildId = guildid;
         this.guildName = guildname;
         this.metadata = new CacheMetadata();
-        createDirectory("./exports");
-        createDirectory("./exports/" + this.guildName);
+
     }
 
     async export() {
-        let lastTimestamp = this.metadata.get("lastExportsTimestamps", this.guildId);
+        await createDirectory("./exports");
+        await createDirectory("./exports/" + this.guildName);
+        let lastTimestamp = await this.metadata.get("lastExportsTimestamps", this.guildId);
         let nowTimestamp = new Date().toISOString()  // example 2023-08-26T02:46:30.229Z
         const nowTimestampFolder = nowTimestamp.slice(0, 19).replace(/:/g, '-').replace("T", "--");  // example 2023-08-26--02-46-30
         console.log("lastTimestamp", lastTimestamp);
@@ -92,35 +99,48 @@ class Exporter {
 
         // after export is confirmed to be done, save the timestamp
         // if users cancels the export, the timestamp will not be saved and the export will be tried again next time
-        this.metadata.set("lastExportsTimestamps", this.guildId, nowTimestamp);
+        await this.metadata.set("lastExportsTimestamps", this.guildId, nowTimestamp);
+    }
+}
+
+async function main() {
+    let config = {}
+    const configPath = "./config.json"
+    try {
+        // read config
+        const data = await fs.readFile(configPath, 'utf8')
+        config = JSON.parse(data);
+    }
+    catch (e) {
+        if (e.code === 'ENOENT') {
+            console.log("./config.json does not exist")
+            console.log('copy config.example.json to config.json and fill in the values to get started');
+            process.exit(1);
+        } else {
+            throw e;
+        }
+    }
+
+    const tokens = {}
+
+    for (const token of config.tokens) {
+        tokens[token['name']] = token['value']
+    }
+
+
+    for (const guild of config.guilds) {
+        if (!tokens[guild.tokenName]) {
+            console.log("tokenName not found in tokens, check config.json")
+            process.exit(1);
+        }
+        if (!guild.enabled) {
+            console.log(`skipping guild '${guild.guildName}', because guilds.enabled is false`)
+            continue;
+        }
+        const exporter = new Exporter(tokens[guild.tokenName], guild.guildId, guild.guildName);
+        await exporter.export();
     }
 }
 
 
-if (!fs.existsSync("./config.json")) {
-    console.log("./config.json does not exist")
-    console.log('fill in config.json to get started');
-    process.exit(1);
-}
-
-const config = JSON.parse(fs.readFileSync("./config.json"));
-
-const tokens = {}
-
-for (const token of config.tokens) {
-    tokens[token['name']] = token['value']
-}
-
-
-for (const guild of config.guilds) {
-    if (!tokens[guild.tokenName]) {
-        console.log("tokenName not found in tokens, check config.json")
-        process.exit(1);
-    }
-    if (!guild.enabled) {
-        console.log("skipping disabled guild", guild.guildName)
-        continue;
-    }
-    const exporter = new Exporter(tokens[guild.tokenName], guild.guildId, guild.guildName);
-    exporter.export();
-}
+main();
