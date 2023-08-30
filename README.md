@@ -3,11 +3,11 @@
 Simple wrapper for [Tyrrrz/DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter) to make incremental backups of Discord channels, including threads and forum posts to be viewed in [slatinsky/DiscordChatExporter-frontend](https://github.com/slatinsky/DiscordChatExporter-frontend)
 
 
-## How to archive discord guilds incrementally (Windows)
+## How to archive discord servers incrementally (Windows)
 
 1. Install .NET 7.0 runtime by following [this guide](https://github.com/Tyrrrz/DiscordChatExporter/blob/master/.docs/Dotnet.md)
 2. Download beta version of DiscordChatExporter.Cli from [Tyrrrz/DiscordChatExporter/actions](https://github.com/Tyrrrz/DiscordChatExporter/actions) -> main workflow -> `DiscordChatExporter.Cli` artifact (Threads support is not yet available in the stable version). You need to be logged in to Github to download the artifact.
-3. Download release (`DiscordChatExporter-incrementalBackup-vX.X.X-win.zip`) of this project from [slatinsky/DiscordChatExporter-incrementalBackup/releases](https://github.com/slatinsky/DiscordChatExporter-incrementalBackup)
+3. Download release (`DiscordChatExporter-incrementalBackup-vX.X.X-win.zip`) of this project from [slatinsky/DiscordChatExporter-incrementalBackup/releases](https://github.com/slatinsky/DiscordChatExporter-incrementalBackup/releases)
 4. Download `DiscordChatExporter-frontend-vX.X.X-win.zip` from [slatinsky/DiscordChatExporter-frontend/releases](https://github.com/slatinsky/DiscordChatExporter-frontend/releases)
 5. create new empty folder
 6. Copy `dcef.exe` and `dcef/` folder from `DiscordChatExporter-frontend-vX.X.X-win.zip` to the new folder
@@ -71,6 +71,8 @@ config.json will look like this:
 15. run `dcef.exe` to browse your exports
 
 Next time you want to back up your guilds, just run `backup.exe` again. It will only export messages that were sent after the last export.
+
+You can also schedule `backup.exe` to run periodically using Windows Task Scheduler.
 
 ## Configuration file
 
