@@ -33,13 +33,13 @@ jobs:
         run: npm install
 
       - name: Create executable for http-server
-        working-directory: backend/http-server
+        working-directory: .
         run: pkg .
 
       - name: Move files to build folder
         run: |
-          mv backup.exe build
-          mv config.example.json build
+          mv backup.exe build\backup.exe
+          mv config.example.json build\config.json
 
       - name: Upload build folder
         uses: actions/upload-artifact@v2
