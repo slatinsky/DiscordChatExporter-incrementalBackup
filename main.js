@@ -23,15 +23,14 @@ class CacheMetadata {
 
     async read() {;
         try {
-            const data = await fs.readFile(this.filePath, 'utf8')
-            this.config = JSON.parse(data);
+            this.config = JSON.parse(await fs.readFile(this.filePath, 'utf8'))
         } catch (err) {
             if (err.code === 'ENOENT') {
                 await createDirectory("./exports");
-                await fs.writeFile(filePath, JSON.stringify({}))
+                await fs.writeFile(this.filePath, JSON.stringify({}))
                 this.config = {};
             } else {
-                throw err;
+                console.error(err)
             }
         }
     }
