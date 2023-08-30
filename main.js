@@ -1,7 +1,8 @@
-import fs from 'fs/promises';
-import { parseArgsStringToArgv } from 'string-argv';
-import clc from 'cli-color';
-import { spawn } from 'cross-spawn';
+// pkg requires require syntax
+const fs = require('fs').promises;
+const parseArgsStringToArgv = require('string-argv').parseArgsStringToArgv;
+const clc = require('cli-color');
+const spawn = require('cross-spawn');
 
 async function createDirectory(path) {
     try {

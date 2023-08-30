@@ -1,0 +1,48 @@
+name: Build Windows binaries
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.16.0
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Create directories
+        run: |
+          mkdir -p build
+
+      - name: Install pkg
+        run: npm install -g pkg
+
+      - name: Install dependencies
+        working-directory: .
+        run: npm install
+
+      - name: Create executable for http-server
+        working-directory: backend/http-server
+        run: pkg .
+
+      - name: Move files to build folder
+        run: |
+          mv backup.exe build
+          mv config.example.json build
+
+      - name: Upload build folder
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows-build
+          path: build
