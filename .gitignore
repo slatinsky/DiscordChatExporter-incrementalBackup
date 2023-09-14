@@ -3,3 +3,4 @@ metadata.json
 config.json
 exports/
 *.exe
+dce/

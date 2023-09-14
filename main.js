@@ -89,7 +89,13 @@ class Exporter {
         console.log("nowTimestamp", nowTimestamp);
 
         // base command
-        let command = `dce/DiscordChatExporter.Cli exportguild --include-threads All --format Json --media --reuse-media --fuck-russia --markdown false --token ${this.token} --guild ${this.guildId} --media-dir 'exports/${this.guildName}/_media/' --output 'exports/${this.guildName}/${nowTimestampFolder}/'`
+        let command = ""
+        if (this.guildId == "@me") {
+            command = `dce/DiscordChatExporter.Cli exportdm --format Json --media --reuse-media --fuck-russia --markdown false --token ${this.token} --media-dir 'exports/${this.guildName}/_media/' --output 'exports/${this.guildName}/${nowTimestampFolder}/'`
+        }
+        else {
+            command = `dce/DiscordChatExporter.Cli exportguild --include-threads All --format Json --media --reuse-media --fuck-russia --markdown false --token ${this.token} --guild ${this.guildId} --media-dir 'exports/${this.guildName}/_media/' --output 'exports/${this.guildName}/${nowTimestampFolder}/'`
+        }
 
         if (lastTimestamp != null) {
             // if not first export

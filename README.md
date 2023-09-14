@@ -44,6 +44,7 @@ dcef.exe
 Example:
 - my discord token is `bXlzZWNyZXRkaXNjb3JkdG9rZW4=`
 - server id I want to back up is `123456789012345678`
+- I want to export dms (use `@me` as server id)
 
 config.json will look like this:
 ```json
@@ -59,6 +60,12 @@ config.json will look like this:
             "tokenName": "mytoken",
             "guildId": "123456789012345678",
             "guildName": "guild-name",
+            "enabled": true
+        },
+        {
+            "tokenName": "mytoken",
+            "guildId": "@me",
+            "guildName": "mytoken-dms",
             "enabled": true
         }
     ]
@@ -87,7 +94,21 @@ You can also schedule `backup.exe` to run periodically using Windows Task Schedu
 
 The script will call `DiscordChatExporter.Cli` according to configuration file `config.json`. Start time of the export is saved in `exports/metadata.json`, so the next time the script is run, it will only export messages that were sent after the last export. The script will also export threads and forum posts.
 
+## Running from source (Linux)
+
+You need to have node.js v18.17.1+, npm 10.0.0+, git and text editor (nano/vi/vim) installed.
+
+```bash
+git clone https://github.com/slatinsky/DiscordChatExporter-incrementalBackup
+cd DiscordChatExporter-incrementalBackup
+cp config.example.json config.json
+nano config.json
+npm install
+node main.js
+```
+
 ## License
+
 GNU GENERAL PUBLIC LICENSE
 
 ## Contributing
