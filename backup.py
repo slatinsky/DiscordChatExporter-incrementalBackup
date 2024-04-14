@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
 import json
+import os
 import re
 import shutil
 import subprocess
 
+
+def is_linux():
+    return os.name == 'posix' and 'linux' in os.uname().sysname.lower()
 
 class Config:
     def __init__(self, config_path='config.json'):
@@ -121,9 +125,19 @@ class CommandRunner:
             nowTimestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")                   # example 2023-08-26T02:46:30.229228Z
             nowTimestampFolder = re.sub(r'\.\d+Z', '', nowTimestamp.replace(':', '-').replace('T', '--'))  # example 2023-08-26--02-46-30
 
-            dce_path = '"dce/DiscordChatExporter.Cli"'
-            common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
-            custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/"'
+            if os.path.exists(f'dce/DiscordChatExporter.Cli.exe'):
+                dce_path = '"dce/DiscordChatExporter.Cli"'
+                common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
+                custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/"'
+            elif is_linux() and shutil.which('docker') is not None:
+                dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
+                common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
+                custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/"'
+            else:
+                print('DiscordChatExporter dependency not found!')
+                print('  (Windows) extract CLI version of DiscordChatExporter into `dce` folder')
+                print('  (Linux)   sudo apt install docker.io; docker pull tyrrrz/discordchatexporter:stable')
+
 
             if guild['type'] == 'exportguild':
                 command = f"{dce_path} exportguild --guild {guild['guildId']} --include-threads All {common_args} {custom_args}"
