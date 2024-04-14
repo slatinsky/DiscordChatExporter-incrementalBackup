@@ -30,10 +30,10 @@ jobs:
 
       - name: Build backup executable with pyinstaller
         working-directory: build
-        run: pyinstaller --onefile --name preprocess backup.py
+        run: pyinstaller --onefile --name backup ../backup.py
 
       - name: Upload backup.exe
         uses: actions/upload-artifact@v2
         with:
           name: backup
-          path: build/dist/preprocess.exe
+          path: build/dist/backup.exe
