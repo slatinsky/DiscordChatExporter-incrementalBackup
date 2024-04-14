@@ -14,35 +14,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Python
+        uses: actions/setup-python@v2.3.3
         with:
-          node-version: 16.16.0
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
+          python-version: '3.11.0'
 
       - name: Create directories
         run: |
           mkdir -p build
 
-      - name: Install pkg
-        run: npm install -g pkg
-
-      - name: Install dependencies
-        working-directory: .
-        run: npm install
-
-      - name: Create executable for http-server
-        working-directory: .
-        run: pkg .
-
-      - name: Move files to build folder
+      - name: Install pyinstaller
+        working-directory: build
         run: |
-          mv backup.exe build\backup.exe
-          mv config.example.json build\config.json
+          pip install pyinstaller==5.5
 
-      - name: Upload build folder
+      - name: Build backup executable with pyinstaller
+        working-directory: build
+        run: pyinstaller --onefile --name preprocess backup.py
+
+      - name: Upload backup.exe
         uses: actions/upload-artifact@v2
         with:
-          name: windows-build
-          path: build
+          name: backup
+          path: build/dist/preprocess.exe

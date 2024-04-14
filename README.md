@@ -96,15 +96,14 @@ The script will call `DiscordChatExporter.Cli` according to configuration file `
 
 ## Running from source (Linux)
 
-You need to have node.js v18.17.1+, npm 10.0.0+, git and text editor (nano/vi/vim) installed.
+You need to have Python 3.11, git and text editor (nano/vi/vim) installed. There are no external Python dependencies needed to run this script.
 
 ```bash
 git clone https://github.com/slatinsky/DiscordChatExporter-incrementalBackup
 cd DiscordChatExporter-incrementalBackup
 cp config.example.json config.json
 nano config.json
-npm install
-node main.js
+python3 backup.py
 ```
 
 ## License

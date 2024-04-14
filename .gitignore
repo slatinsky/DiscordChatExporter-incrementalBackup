@@ -3,4 +3,5 @@ metadata.json
 config.json
 exports/
 *.exe
-dce/
+dce/*
+!dce/README.md

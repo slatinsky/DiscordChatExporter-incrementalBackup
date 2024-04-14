@@ -1,0 +1,1 @@
+Download and extract `DiscordChatExporter.Cli.zip` here. Download from [github.com/Tyrrrz/DiscordChatExporter/releases](https://github.com/Tyrrrz/DiscordChatExporter/releases)
