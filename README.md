@@ -60,13 +60,15 @@ config.json will look like this:
             "tokenName": "mytoken",
             "guildId": "123456789012345678",
             "guildName": "guild-name",
-            "enabled": true
+            "enabled": true,
+            "throttleHours": 23.5
         },
         {
             "tokenName": "mytoken",
             "guildId": "@me",
             "guildName": "mytoken-dms",
-            "enabled": true
+            "enabled": true,
+            "throttleHours": 3
         }
     ]
 }
@@ -89,6 +91,7 @@ You can also schedule `backup.exe` to run periodically using Windows Task Schedu
 - `guilds.guildId` - the id of the guild you want to backup
 - `guilds.guildName` - name of the folder where the guild will be saved
 - `guilds.enabled` - if true, the guild will be backed up
+- `guilds.throttleHours` - minimum time between backups in hours. Set to 0 to backup every time the script is run.
 
 ## How it works
 

@@ -5,6 +5,8 @@ import re
 import shutil
 import subprocess
 
+# dry run option for development
+DRY_RUN = False
 
 def is_linux():
     return os.name == 'posix' and 'linux' in os.uname().sysname.lower()
@@ -36,6 +38,9 @@ class Config:
                 guild['type'] = 'exportdm'
             else:
                 guild['type'] = 'exportguild'
+
+            if 'throttleHours' not in guild:
+                guild['throttleHours'] = 0
 
             guilds.append(guild)
 
@@ -121,9 +126,19 @@ class CommandRunner:
 
     def export(self) -> None:
         for guild in self.config.guilds:
+            print(f'Guild {guild["guildName"]} ({guild["guildId"]}):')
             # export may take a long time. We want to know when the export started, so the next export won't miss any new messages created during the export
             nowTimestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")                   # example 2023-08-26T02:46:30.229228Z
             nowTimestampFolder = re.sub(r'\.\d+Z', '', nowTimestamp.replace(':', '-').replace('T', '--'))  # example 2023-08-26--02-46-30
+            last_export_timestamp = self.timestamps.get_timestamp(guild['guildId'])
+
+            # skip export if export was done recently (based on throttleHours from config)
+            if last_export_timestamp is not None:
+                hoursSinceLastExport = (datetime.fromisoformat(nowTimestamp) - datetime.fromisoformat(last_export_timestamp)).total_seconds() / 3600
+                print(f'  Last export was {hoursSinceLastExport:.2f} hours ago')
+                if hoursSinceLastExport < guild['throttleHours']:
+                    print(f'  Skipping export because throttleHours is set to {guild["throttleHours"]} hours')
+                    continue
 
             if os.path.exists(f'dce/DiscordChatExporter.Cli.exe'):
                 dce_path = '"dce/DiscordChatExporter.Cli"'
@@ -134,9 +149,12 @@ class CommandRunner:
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/"'
             else:
-                print('DiscordChatExporter dependency not found!')
-                print('  (Windows) extract CLI version of DiscordChatExporter into `dce` folder')
-                print('  (Linux)   sudo apt install docker.io; docker pull tyrrrz/discordchatexporter:stable')
+                print("#########################################################################################")
+                print('# DiscordChatExporter dependency not found!                                             #')
+                print('#   (Windows) extract CLI version of DiscordChatExporter into `dce` folder              #')
+                print('#   (Linux)   sudo apt install docker.io; docker pull tyrrrz/discordchatexporter:stable #')
+                print("#########################################################################################")
+                exit(1)
 
 
             if guild['type'] == 'exportguild':
@@ -144,23 +162,27 @@ class CommandRunner:
             elif guild['type'] == 'exportdm':
                 command = f"{dce_path} exportdm {common_args} {custom_args}"
             else:
-                print(f'Unknown export type {guild["type"]}')
+                print(f'  Unknown export type {guild["type"]}')
                 exit(1)
 
-            last_export_timestamp = self.timestamps.get_timestamp(guild['guildId'])
             if last_export_timestamp is not None:
                 command = f'{command} --after "{last_export_timestamp}"'
 
-            print(self.redact_dce_command(command))
-            proc = subprocess.run(command, shell=True)
+            print(f"  {self.redact_dce_command(command)}")
 
-            return_code = proc.returncode
-            print(f"return code {return_code}")
+            if not DRY_RUN:
+                proc = subprocess.run(command, shell=True)
 
-            if return_code == 0:
-                self.timestamps.set_timestamp(guild['guildId'], nowTimestamp)
+                return_code = proc.returncode
+                print(f"  return code {return_code}")
+
+                if return_code == 0:
+                    self.timestamps.set_timestamp(guild['guildId'], nowTimestamp)
+                else:
+                    print(f'  Error exporting {guild["guildName"]}. Does dce/DiscordChatExporter.Cli exist? Maybe there are no new messages? Check the logs above for more information.')
+
             else:
-                print(f'Error exporting {guild["guildName"]}. Does dce/DiscordChatExporter.Cli exist? Maybe there are no new messages? Check the logs above for more information.')
+                print("  dry run, not really running the command and not updating timestamps")
 
 
 
