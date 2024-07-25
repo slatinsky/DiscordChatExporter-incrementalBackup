@@ -70,6 +70,7 @@ config.json will look like this:
             "channelId": "123456789012345678",
             "enabled": true,
             "throttleHours": 12
+        },
         {
             "tokenName": "mytoken",
             "guildId": "@me",
