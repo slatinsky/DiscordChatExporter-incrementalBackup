@@ -138,6 +138,8 @@ class CommandRunner:
 
             # skip export if export was done recently (based on throttleHours from config)
             if last_export_timestamp is not None:
+                last_export_timestamp = last_export_timestamp.replace('Z', '+00:00')
+                nowTimestamp = nowTimestamp.replace('Z', '+00:00')
                 hoursSinceLastExport = (datetime.fromisoformat(nowTimestamp) - datetime.fromisoformat(last_export_timestamp)).total_seconds() / 3600
                 print(f'  Last export was {hoursSinceLastExport:.2f} hours ago')
                 if hoursSinceLastExport < guild['throttleHours']:
