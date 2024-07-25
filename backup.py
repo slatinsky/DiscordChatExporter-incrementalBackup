@@ -100,6 +100,8 @@ class Timestamps:
 
         except FileNotFoundError:
             print('exports/metadata.json does not exist, starting from scratch')
+            with open(timestamp_path, 'w', encoding='utf-8') as f:
+                json.dump({'lastExportsTimestamps': {}}, f)
 
     def get_timestamp(self, guildId) -> str:
         return self._timestampsGuilds.get(guildId, None)
