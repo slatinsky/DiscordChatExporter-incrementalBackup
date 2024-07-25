@@ -65,6 +65,13 @@ config.json will look like this:
         },
         {
             "tokenName": "mytoken",
+            "guildId": "channel",
+            "guildName": "guild-channel",
+            "channelId": "123456789012345678",
+            "enabled": true,
+            "throttleHours": 12
+        {
+            "tokenName": "mytoken",
             "guildId": "@me",
             "guildName": "mytoken-dms",
             "enabled": true,
@@ -90,6 +97,7 @@ You can also schedule `backup.exe` to run periodically using Windows Task Schedu
 - `guilds.tokenName` - your name for the discord token defined in `tokens.name`
 - `guilds.guildId` - the id of the guild you want to backup
 - `guilds.guildName` - name of the folder where the guild will be saved
+- `guilds.channelId` - the id of the channel you want to backup
 - `guilds.enabled` - if true, the guild will be backed up
 - `guilds.throttleHours` - minimum time between backups in hours. Set to 0 to backup every time the script is run.
 
