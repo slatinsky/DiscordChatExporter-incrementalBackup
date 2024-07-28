@@ -45,7 +45,7 @@ Example:
 - my discord token is `bXlzZWNyZXRkaXNjb3JkdG9rZW4=`
 - server id I want to back up is `123456789012345678`
 - I want to export dms (use `@me` as the guildId)
-  - Or I want to export a specific channel (use `channel` as guildId)
+  - Or I want to export a specific channel (use `channel` as the guildId)
     - channel id I want to back up is `876543210987654321`
 
 config.json will look like this:
