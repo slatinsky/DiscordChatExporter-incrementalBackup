@@ -68,7 +68,7 @@ config.json will look like this:
         {
             "tokenName": "mytoken",
             "guildId": "channel",
-            "guildName": "guild-channel",
+            "guildName": "mytoken-channel",
             "channelId": "876543210987654321",
             "enabled": true,
             "throttleHours": 12
