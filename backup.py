@@ -14,7 +14,7 @@ def is_linux():
 class Config:
     def __init__(self, config_path='config.json'):
         try:
-            with open('config.json') as f:
+            with open(config_path) as f:
                 self._config = json.load(f)
         except FileNotFoundError:
             print(f'{config_path} does not exist')
