@@ -104,8 +104,12 @@ class Timestamps:
 
     def set_timestamp(self, guildId, timestamp) -> None:
         self._timestampsGuilds[guildId] = timestamp
-        with open(self._timestamp_path, 'r', encoding='utf-8') as f:
-            json_content = json.load(f)
+        try:
+            with open(self._timestamp_path, 'r', encoding='utf-8') as f:
+                json_content = json.load(f)
+
+        except FileNotFoundError:
+            json_content = {}
 
         with open(self._timestamp_path, 'w', encoding='utf-8') as f:
             json_content['lastExportsTimestamps'] = self._timestampsGuilds
