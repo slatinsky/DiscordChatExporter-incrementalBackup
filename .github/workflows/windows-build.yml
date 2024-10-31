@@ -12,10 +12,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v2.3.3
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11.0'
 
@@ -33,7 +33,7 @@ jobs:
         run: pyinstaller --onefile --name backup ../backup.py
 
       - name: Upload backup.exe
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: backup
           path: build/dist/backup.exe
