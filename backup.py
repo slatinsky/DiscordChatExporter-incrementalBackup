@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 
 # dry run option for development
 DRY_RUN = False
@@ -149,7 +150,10 @@ class CommandRunner:
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/"'
             elif is_linux() and shutil.which('docker') is not None:
-                dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
+
+                tty_flag = "-it" if sys.stdin.isatty() else ""
+                
+                dce_path = f'docker run --rm {tty_flag} -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/"'
             else:
@@ -174,16 +178,23 @@ class CommandRunner:
 
             print(f"  {self.redact_dce_command(command)}")
 
-            if not DRY_RUN:
-                proc = subprocess.run(command, shell=True)
+            if not DRY_RUN:                
+                if not sys.stdin.isatty():
+                    proc = subprocess.run(command, shell=True)
+                else:                 
+                    proc = subprocess.run(command, shell=True, capture_output=True, text=True)
 
+                    print("STDOUT:\n", proc.stdout)
+                    print("STDERR:\n", proc.stderr)
+                
                 return_code = proc.returncode
                 print(f"  return code {return_code}")
-
+                
                 if return_code == 0:
                     self.timestamps.set_timestamp(guild['guildId'], nowTimestamp)
                 else:
                     print(f'  Error exporting {guild["guildName"]}. Does dce/DiscordChatExporter.Cli exist? Maybe there are no new messages? Check the logs above for more information.')
+
 
             else:
                 print("  dry run, not really running the command and not updating timestamps")
