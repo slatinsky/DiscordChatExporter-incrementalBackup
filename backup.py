@@ -14,7 +14,7 @@ def is_linux():
 class Config:
     def __init__(self, config_path='config.json'):
         try:
-            with open(config_path) as f:
+            with open(config_path, encoding='utf-8') as f:
                 self._config = json.load(f)
         except FileNotFoundError:
             print(f'{config_path} does not exist')
@@ -149,14 +149,14 @@ class CommandRunner:
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "exports/{guild["guildName"]}/_media/" --output "exports/{guild["guildName"]}/{nowTimestampFolder}/"'
             elif is_linux() and shutil.which('docker') is not None:
-                dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:stable'
+                dce_path = f'docker run --rm -it -v "$(pwd)/exports/{guild["guildName"]}/_media:/out/{guild["guildName"]}/_media" -v "$(pwd)/exports/{guild["guildName"]}/{nowTimestampFolder}:/out/{guild["guildName"]}/{nowTimestampFolder}" tyrrrz/discordchatexporter:latest'
                 common_args = f'--format Json --media --reuse-media --fuck-russia --markdown false'
                 custom_args = f'--token "{guild["tokenValue"]}" --media-dir "{guild["guildName"]}/_media/" --output "{guild["guildName"]}/{nowTimestampFolder}/"'
             else:
                 print("#########################################################################################")
                 print('# DiscordChatExporter dependency not found!                                             #')
                 print('#   (Windows) extract CLI version of DiscordChatExporter into `dce` folder              #')
-                print('#   (Linux)   sudo apt install docker.io; docker pull tyrrrz/discordchatexporter:stable #')
+                print('#   (Linux)   sudo apt install docker.io; docker pull tyrrrz/discordchatexporter:latest #')
                 print("#########################################################################################")
                 exit(1)
 
