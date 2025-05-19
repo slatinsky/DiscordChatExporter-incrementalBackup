@@ -36,6 +36,8 @@ class Config:
             guild['tokenValue'] = self._tokens[guild['tokenName']]
             if guild['guildId'] == '@me':
                 guild['type'] = 'exportdm'
+            elif guild['guildId'] == 'channel':
+                guild['type'] = 'export'
             else:
                 guild['type'] = 'exportguild'
 
@@ -67,7 +69,7 @@ class Config:
                 print(f'Guild must have "{required_field}" field defined - found empty value')
                 exit(1)
 
-        if guild['guildId'] != '@me' and not discord_snowflake.match(guild['guildId']):
+        if guild['guildId'] != '@me' and not 'channel' and not discord_snowflake.match(guild['guildId']):
             print(f'Guild field "guildId" must be a discord snowflake (must be a string of 17-19 digits or "@me" for DMs) - found {guild["guildId"]}')
             exit(1)
 
@@ -98,6 +100,8 @@ class Timestamps:
 
         except FileNotFoundError:
             print('exports/metadata.json does not exist, starting from scratch')
+            with open(timestamp_path, 'w', encoding='utf-8') as f:
+                json.dump({'lastExportsTimestamps': {}}, f)
 
     def get_timestamp(self, guildId) -> str:
         return self._timestampsGuilds.get(guildId, None)
@@ -138,6 +142,8 @@ class CommandRunner:
 
             # skip export if export was done recently (based on throttleHours from config)
             if last_export_timestamp is not None:
+                last_export_timestamp = last_export_timestamp.replace('Z', '+00:00')
+                nowTimestamp = nowTimestamp.replace('Z', '+00:00')
                 hoursSinceLastExport = (datetime.fromisoformat(nowTimestamp) - datetime.fromisoformat(last_export_timestamp)).total_seconds() / 3600
                 print(f'  Last export was {hoursSinceLastExport:.2f} hours ago')
                 if hoursSinceLastExport < guild['throttleHours']:
@@ -165,6 +171,8 @@ class CommandRunner:
                 command = f"{dce_path} exportguild --guild {guild['guildId']} --include-threads All {common_args} {custom_args}"
             elif guild['type'] == 'exportdm':
                 command = f"{dce_path} exportdm {common_args} {custom_args}"
+            elif guild['type'] == 'export':
+                command = f"{dce_path} export --channel {guild['channelId']} {common_args} {custom_args}"
             else:
                 print(f'  Unknown export type {guild["type"]}')
                 exit(1)
