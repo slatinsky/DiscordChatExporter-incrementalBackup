@@ -102,12 +102,12 @@ The script will call `DiscordChatExporter.Cli` according to configuration file `
 You need to have Python 3.11, git and text editor (nano/vi/vim) installed. There are no external Python dependencies needed to run this script.
 
 ```bash
-# install docker (if needed) and pull latest stable DiscordChatExporter image
+# install docker (if needed) and pull latest DiscordChatExporter image
 sudo apt install docker.io -y
-docker pull tyrrrz/discordchatexporter:stable
+docker pull tyrrrz/discordchatexporter:latest
 
 # test if the image works (it should print the help message)
-docker run --rm tyrrrz/discordchatexporter:stable
+docker run --rm tyrrrz/discordchatexporter:latest
 
 # download the backup script repository
 git clone https://github.com/slatinsky/DiscordChatExporter-incrementalBackup
